@@ -9,3 +9,5 @@ nltk
 textblob
 scikit-learn
 pytest
+black
+flake8

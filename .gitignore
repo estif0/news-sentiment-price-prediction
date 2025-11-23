@@ -221,3 +221,4 @@ logs/
 temp/
 docs/
 copilot-instructions.md
+nltk_data/

@@ -10,4 +10,5 @@ textblob
 scikit-learn
 pytest
 black
+black[jupyter]
 flake8

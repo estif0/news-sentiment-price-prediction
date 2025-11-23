@@ -87,6 +87,7 @@ news-sentiment-price-prediction/
 │   └── core/                 # Core business logic
 │       ├── data_loader.py    # Data loading and validation
 │       ├── eda.py           # Exploratory data analysis
+│       ├── financial_analyzer.py # Financial metrics and technical analysis
 │       └── visualizer.py    # Plotting and visualization
 ├── 🧪 tests/                # Unit and integration tests
 ├── ⚙️ .github/workflows/    # CI/CD automation
@@ -126,12 +127,12 @@ news-sentiment-price-prediction/
 -   [x] **Professional Documentation**: Comprehensive notebook with data-driven insights
 -   [x] **Interim Report**: Summarized findings and insights from Task 1
 
-### 🚧 Task 2: Quantitative Analysis (Planned)
+### 🚧 Task 2: Quantitative Analysis (In Progress)
 
--   [ ] **Stock Data Integration**: Load and validate OHLCV price data
+-   [x] **Stock Data Integration**: Load and validate OHLCV price data
 -   [ ] **Technical Indicators**: Calculate MA, RSI, MACD using TA-Lib
--   [ ] **Financial Metrics**: Volatility, returns using PyNance
--   [ ] **Data Visualization**: Interactive stock charts with indicators
+-   [x] **Financial Metrics**: Volatility, returns, Sharpe ratio, Drawdown
+-   [x] **Data Visualization**: Interactive stock charts, multi-stock comparison, correlation heatmaps
 -   [ ] **Data Alignment**: Synchronize news and stock datasets by date
 
 ### 🚧 Task 3: Correlation Analysis (Planned)
@@ -161,8 +162,8 @@ news-sentiment-price-prediction/
 ### Branch Strategy
 
 -   `main`: Stable, production-ready code
--   `task-1`: EDA implementation (ready for merge)
--   `task-2`: Quantitative analysis (upcoming)
+-   `task-1`: EDA implementation (**Merged**)
+-   `task-2`: Quantitative analysis (ongoing)
 -   `task-3`: Correlation modeling (final phase)
 
 ## 🏃‍♂️ Usage Examples
@@ -189,6 +190,27 @@ viz = Visualizer()
 viz.plot_headline_length_distribution(headline_lengths)
 viz.plot_common_keywords(keywords)
 viz.plot_publication_frequency(publication_frequency)
+```
+
+### Analyze Stock Performance
+
+```python
+from src.core.data_loader import DataLoader
+from src.core.financial_analyzer import FinancialAnalyzer
+from src.core.visualizer import Visualizer
+
+# Load stock data
+loader = DataLoader()
+stock_data = loader.load_stock_data('data/cleaned/AAPL.csv')
+
+# Calculate metrics
+analyzer = FinancialAnalyzer()
+metrics = analyzer.calculate_performance_metrics(stock_data)
+print(f"Sharpe Ratio: {metrics['sharpe_ratio']:.2f}")
+
+# Visualize
+viz = Visualizer()
+viz.plot_stock_overview(stock_data, "AAPL")
 ```
 
 ### Run Analysis Pipeline

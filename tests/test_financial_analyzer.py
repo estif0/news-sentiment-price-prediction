@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-from src.core.financial_analyzer import FinancialAnalyzer
+from src.core.financial_analyzer import FinancialAnalyzer, TALIB_AVAILABLE
 
 
 class TestFinancialAnalyzer:
@@ -196,3 +196,198 @@ class TestFinancialAnalyzer:
 
         metrics = analyzer.calculate_performance_metrics(single_row)
         assert metrics == {}
+
+
+class TestTechnicalIndicators:
+    """Test suite for TA-Lib technical indicators."""
+
+    @pytest.fixture
+    def sample_stock_data(self):
+        """Create sample stock data with sufficient history for indicators."""
+        dates = pd.date_range("2020-01-01", periods=250, freq="D")
+        np.random.seed(42)
+
+        # Generate realistic stock price data with trend
+        initial_price = 100
+        trend = 0.0005  # Slight upward trend
+        volatility = 0.02
+
+        prices = [initial_price]
+        for _ in range(249):
+            change = np.random.normal(trend, volatility)
+            prices.append(prices[-1] * (1 + change))
+
+        data = pd.DataFrame(
+            {
+                "Date": dates,
+                "Open": prices,
+                "High": [p * (1 + abs(np.random.normal(0, 0.01))) for p in prices],
+                "Low": [p * (1 - abs(np.random.normal(0, 0.01))) for p in prices],
+                "Close": prices,
+                "Volume": np.random.randint(1000000, 10000000, 250),
+            }
+        )
+
+        data["High"] = data[["Open", "High", "Close"]].max(axis=1)
+        data["Low"] = data[["Open", "Low", "Close"]].min(axis=1)
+
+        return data.set_index("Date")
+
+    @pytest.fixture
+    def analyzer(self):
+        """Create FinancialAnalyzer instance."""
+        return FinancialAnalyzer()
+
+    @pytest.mark.skipif(not TALIB_AVAILABLE, reason="TA-Lib not installed")
+    def test_calculate_sma(self, analyzer, sample_stock_data):
+        """Test Simple Moving Average calculation."""
+        sma = analyzer.calculate_sma(sample_stock_data, period=20)
+
+        # Should have same length as input
+        assert len(sma) == len(sample_stock_data)
+
+        # First 19 values should be NaN (not enough data)
+        assert all(pd.isna(sma.iloc[:19]))
+
+        # 20th value should be the average of first 20 closing prices
+        expected_sma = sample_stock_data["Close"].iloc[:20].mean()
+        assert abs(sma.iloc[19] - expected_sma) < 0.01
+
+        # Values should be positive
+        assert all(sma.dropna() > 0)
+
+    @pytest.mark.skipif(not TALIB_AVAILABLE, reason="TA-Lib not installed")
+    def test_calculate_ema(self, analyzer, sample_stock_data):
+        """Test Exponential Moving Average calculation."""
+        ema = analyzer.calculate_ema(sample_stock_data, period=20)
+
+        # Should have same length as input
+        assert len(ema) == len(sample_stock_data)
+
+        # First values will be NaN
+        assert pd.isna(ema.iloc[0])
+
+        # EMA should stabilize after sufficient data
+        assert not pd.isna(ema.iloc[-1])
+
+        # Values should be positive
+        assert all(ema.dropna() > 0)
+
+    @pytest.mark.skipif(not TALIB_AVAILABLE, reason="TA-Lib not installed")
+    def test_calculate_rsi(self, analyzer, sample_stock_data):
+        """Test RSI calculation."""
+        rsi = analyzer.calculate_rsi(sample_stock_data, period=14)
+
+        # Should have same length as input
+        assert len(rsi) == len(sample_stock_data)
+
+        # First values will be NaN
+        assert pd.isna(rsi.iloc[0])
+
+        # RSI values should be between 0 and 100
+        valid_rsi = rsi.dropna()
+        assert all(valid_rsi >= 0)
+        assert all(valid_rsi <= 100)
+
+    @pytest.mark.skipif(not TALIB_AVAILABLE, reason="TA-Lib not installed")
+    def test_calculate_macd(self, analyzer, sample_stock_data):
+        """Test MACD calculation."""
+        macd_data = analyzer.calculate_macd(sample_stock_data)
+
+        # Should return DataFrame with 3 columns
+        assert isinstance(macd_data, pd.DataFrame)
+        assert list(macd_data.columns) == ["MACD", "Signal", "Histogram"]
+
+        # Should have same length as input
+        assert len(macd_data) == len(sample_stock_data)
+
+        # First values will be NaN
+        assert pd.isna(macd_data["MACD"].iloc[0])
+
+        # Histogram should equal MACD - Signal
+        valid_indices = macd_data.dropna().index
+        if len(valid_indices) > 0:
+            for idx in valid_indices[-10:]:  # Check last 10 valid values
+                expected_hist = (
+                    macd_data.loc[idx, "MACD"] - macd_data.loc[idx, "Signal"]
+                )
+                assert abs(macd_data.loc[idx, "Histogram"] - expected_hist) < 1e-6
+
+    @pytest.mark.skipif(not TALIB_AVAILABLE, reason="TA-Lib not installed")
+    def test_calculate_bollinger_bands(self, analyzer, sample_stock_data):
+        """Test Bollinger Bands calculation."""
+        bb_data = analyzer.calculate_bollinger_bands(sample_stock_data, period=20)
+
+        # Should return DataFrame with 3 columns
+        assert isinstance(bb_data, pd.DataFrame)
+        assert list(bb_data.columns) == ["Upper", "Middle", "Lower"]
+
+        # Should have same length as input
+        assert len(bb_data) == len(sample_stock_data)
+
+        # Upper band should be above middle, middle above lower
+        valid_data = bb_data.dropna()
+        if len(valid_data) > 0:
+            assert all(valid_data["Upper"] >= valid_data["Middle"])
+            assert all(valid_data["Middle"] >= valid_data["Lower"])
+
+    @pytest.mark.skipif(not TALIB_AVAILABLE, reason="TA-Lib not installed")
+    def test_add_technical_indicators(self, analyzer, sample_stock_data):
+        """Test adding all technical indicators at once."""
+        result = analyzer.add_technical_indicators(sample_stock_data)
+
+        # Should include all original columns
+        for col in sample_stock_data.columns:
+            assert col in result.columns
+
+        # Should include new indicator columns
+        expected_indicators = [
+            "SMA_20",
+            "SMA_50",
+            "SMA_200",
+            "EMA_12",
+            "EMA_26",
+            "RSI_14",
+            "MACD",
+            "MACD_Signal",
+            "MACD_Histogram",
+            "BB_Upper",
+            "BB_Middle",
+            "BB_Lower",
+        ]
+
+        for indicator in expected_indicators:
+            assert indicator in result.columns, f"{indicator} not found in result"
+
+        # Should have same length as input
+        assert len(result) == len(sample_stock_data)
+
+    @pytest.mark.skipif(not TALIB_AVAILABLE, reason="TA-Lib not installed")
+    def test_indicators_with_insufficient_data(self, analyzer):
+        """Test indicators with insufficient data."""
+        # Create small dataset
+        small_data = pd.DataFrame(
+            {
+                "Close": [100, 101, 102, 103, 104],
+                "Open": [99, 100, 101, 102, 103],
+                "High": [101, 102, 103, 104, 105],
+                "Low": [98, 99, 100, 101, 102],
+                "Volume": [1000000] * 5,
+            },
+            index=pd.date_range("2020-01-01", periods=5),
+        )
+
+        # Should not raise error, but will have many NaN values
+        sma = analyzer.calculate_sma(small_data, period=20)
+        assert all(pd.isna(sma))  # All NaN because not enough data
+
+    def test_talib_import_error_handling(self, analyzer):
+        """Test that appropriate error is raised when TA-Lib not available."""
+        if not TALIB_AVAILABLE:
+            sample_data = pd.DataFrame(
+                {"Close": [100, 101, 102]},
+                index=pd.date_range("2020-01-01", periods=3),
+            )
+
+            with pytest.raises(ImportError, match="TA-Lib is required"):
+                analyzer.calculate_sma(sample_data)

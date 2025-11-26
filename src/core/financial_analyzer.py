@@ -2,6 +2,24 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List, Optional, Tuple
 
+try:
+    import talib
+
+    TALIB_AVAILABLE = True
+except ImportError:
+    TALIB_AVAILABLE = False
+    print("Warning: TA-Lib not available. Technical indicators will not work.")
+
+try:
+    import pynance as pn
+
+    PYNANCE_AVAILABLE = True
+except ImportError:
+    PYNANCE_AVAILABLE = False
+    print(
+        "Warning: PyNance not available. Some financial calculations will use fallback methods."
+    )
+
 
 class FinancialAnalyzer:
     """
@@ -11,11 +29,258 @@ class FinancialAnalyzer:
 
     def __init__(self):
         """Initialize the FinancialAnalyzer."""
-        pass
+        if not TALIB_AVAILABLE:
+            print(
+                "Warning: TA-Lib is not installed. Technical indicators may not work."
+            )
+        if not PYNANCE_AVAILABLE:
+            print(
+                "Warning: PyNance is not installed. Some financial calculations will use fallback methods."
+            )
+
+    # ==================== Technical Indicators (TA-Lib) ====================
+
+    def calculate_sma(
+        self, data: pd.DataFrame, column: str = "Close", period: int = 20
+    ) -> pd.Series:
+        """
+        Calculate Simple Moving Average (SMA) using TA-Lib.
+
+        SMA = Sum of closing prices over period / period
+
+        Args:
+            data (pd.DataFrame): Stock data
+            column (str): Column to calculate SMA for (default: 'Close')
+            period (int): SMA period (default: 20)
+
+        Returns:
+            pd.Series: Simple Moving Average values
+
+        Raises:
+            ImportError: If TA-Lib is not installed
+        """
+        if not TALIB_AVAILABLE:
+            raise ImportError(
+                "TA-Lib is required for technical indicators. "
+                "Install it with: pip install TA-Lib"
+            )
+
+        prices = data[column].astype(np.float64).values
+        sma = talib.SMA(prices, timeperiod=period)
+        return pd.Series(sma, index=data.index, name=f"SMA_{period}")
+
+    def calculate_ema(
+        self, data: pd.DataFrame, column: str = "Close", period: int = 20
+    ) -> pd.Series:
+        """
+        Calculate Exponential Moving Average (EMA) using TA-Lib.
+
+        EMA gives more weight to recent prices, making it more responsive
+        to price changes than SMA.
+
+        Formula: EMA = (Close - EMA(previous)) × multiplier + EMA(previous)
+        Where multiplier = 2 / (period + 1)
+
+        Args:
+            data (pd.DataFrame): Stock data
+            column (str): Column to calculate EMA for (default: 'Close')
+            period (int): EMA period (default: 20)
+
+        Returns:
+            pd.Series: Exponential Moving Average values
+
+        Raises:
+            ImportError: If TA-Lib is not installed
+        """
+        if not TALIB_AVAILABLE:
+            raise ImportError(
+                "TA-Lib is required for technical indicators. "
+                "Install it with: pip install TA-Lib"
+            )
+
+        prices = data[column].astype(np.float64).values
+        ema = talib.EMA(prices, timeperiod=period)
+        return pd.Series(ema, index=data.index, name=f"EMA_{period}")
+
+    def calculate_rsi(
+        self, data: pd.DataFrame, column: str = "Close", period: int = 14
+    ) -> pd.Series:
+        """
+        Calculate Relative Strength Index (RSI) using TA-Lib.
+
+        RSI measures the magnitude of recent price changes to evaluate
+        overbought or oversold conditions.
+
+        Formula: RSI = 100 - (100 / (1 + RS))
+        Where RS = Average Gain / Average Loss over period
+
+        Interpretation:
+        - RSI > 70: Overbought (potential sell signal)
+        - RSI < 30: Oversold (potential buy signal)
+        - RSI = 50: Neutral
+
+        Args:
+            data (pd.DataFrame): Stock data
+            column (str): Column to calculate RSI for (default: 'Close')
+            period (int): RSI period (default: 14)
+
+        Returns:
+            pd.Series: RSI values (0-100)
+
+        Raises:
+            ImportError: If TA-Lib is not installed
+        """
+        if not TALIB_AVAILABLE:
+            raise ImportError(
+                "TA-Lib is required for technical indicators. "
+                "Install it with: pip install TA-Lib"
+            )
+
+        prices = data[column].astype(np.float64).values
+        rsi = talib.RSI(prices, timeperiod=period)
+        return pd.Series(rsi, index=data.index, name=f"RSI_{period}")
+
+    def calculate_macd(
+        self,
+        data: pd.DataFrame,
+        column: str = "Close",
+        fast_period: int = 12,
+        slow_period: int = 26,
+        signal_period: int = 9,
+    ) -> pd.DataFrame:
+        """
+        Calculate Moving Average Convergence Divergence (MACD) using TA-Lib.
+
+        MACD is a trend-following momentum indicator that shows the relationship
+        between two moving averages of a security's price.
+
+        Components:
+        - MACD Line: (12-period EMA - 26-period EMA)
+        - Signal Line: 9-period EMA of MACD Line
+        - MACD Histogram: MACD Line - Signal Line
+
+        Interpretation:
+        - MACD > Signal: Bullish (buy signal)
+        - MACD < Signal: Bearish (sell signal)
+        - Histogram crossing zero: Potential trend change
+
+        Args:
+            data (pd.DataFrame): Stock data
+            column (str): Column to calculate MACD for (default: 'Close')
+            fast_period (int): Fast EMA period (default: 12)
+            slow_period (int): Slow EMA period (default: 26)
+            signal_period (int): Signal line period (default: 9)
+
+        Returns:
+            pd.DataFrame: DataFrame with columns ['MACD', 'Signal', 'Histogram']
+
+        Raises:
+            ImportError: If TA-Lib is not installed
+        """
+        if not TALIB_AVAILABLE:
+            raise ImportError(
+                "TA-Lib is required for technical indicators. "
+                "Install it with: pip install TA-Lib"
+            )
+
+        prices = data[column].astype(np.float64).values
+        macd, signal, histogram = talib.MACD(
+            prices,
+            fastperiod=fast_period,
+            slowperiod=slow_period,
+            signalperiod=signal_period,
+        )
+
+        return pd.DataFrame(
+            {"MACD": macd, "Signal": signal, "Histogram": histogram}, index=data.index
+        )
+
+    def calculate_bollinger_bands(
+        self,
+        data: pd.DataFrame,
+        column: str = "Close",
+        period: int = 20,
+        nbdevup: int = 2,
+        nbdevdn: int = 2,
+    ) -> pd.DataFrame:
+        """
+        Calculate Bollinger Bands using TA-Lib.
+
+        Bollinger Bands consist of a middle band (SMA) and two outer bands
+        (standard deviations away from the middle band).
+
+        Args:
+            data (pd.DataFrame): Stock data
+            column (str): Column to calculate bands for (default: 'Close')
+            period (int): Period for SMA and standard deviation (default: 20)
+            nbdevup (int): Number of standard deviations for upper band (default: 2)
+            nbdevdn (int): Number of standard deviations for lower band (default: 2)
+
+        Returns:
+            pd.DataFrame: DataFrame with columns ['Upper', 'Middle', 'Lower']
+
+        Raises:
+            ImportError: If TA-Lib is not installed
+        """
+        if not TALIB_AVAILABLE:
+            raise ImportError(
+                "TA-Lib is required for technical indicators. "
+                "Install it with: pip install TA-Lib"
+            )
+
+        prices = data[column].astype(np.float64).values
+        upper, middle, lower = talib.BBANDS(
+            prices, timeperiod=period, nbdevup=nbdevup, nbdevdn=nbdevdn
+        )
+
+        return pd.DataFrame(
+            {"Upper": upper, "Middle": middle, "Lower": lower}, index=data.index
+        )
+
+    def add_technical_indicators(
+        self, data: pd.DataFrame, column: str = "Close"
+    ) -> pd.DataFrame:
+        """
+        Add all technical indicators to the DataFrame.
+
+        Args:
+            data (pd.DataFrame): Stock data
+            column (str): Column to calculate indicators for (default: 'Close')
+
+        Returns:
+            pd.DataFrame: Original data with technical indicator columns added
+        """
+        result = data.copy()
+
+        # Moving Averages
+        result["SMA_20"] = self.calculate_sma(data, column, 20)
+        result["SMA_50"] = self.calculate_sma(data, column, 50)
+        result["SMA_200"] = self.calculate_sma(data, column, 200)
+        result["EMA_12"] = self.calculate_ema(data, column, 12)
+        result["EMA_26"] = self.calculate_ema(data, column, 26)
+
+        # RSI
+        result["RSI_14"] = self.calculate_rsi(data, column, 14)
+
+        # MACD
+        macd_data = self.calculate_macd(data, column)
+        result["MACD"] = macd_data["MACD"]
+        result["MACD_Signal"] = macd_data["Signal"]
+        result["MACD_Histogram"] = macd_data["Histogram"]
+
+        # Bollinger Bands
+        bb_data = self.calculate_bollinger_bands(data, column)
+        result["BB_Upper"] = bb_data["Upper"]
+        result["BB_Middle"] = bb_data["Middle"]
+        result["BB_Lower"] = bb_data["Lower"]
+
+        return result
+
+    # ==================== Existing Methods ====================
 
     def calculate_returns(self, data: pd.DataFrame, column: str = "Close") -> pd.Series:
         """
-        Calculate daily percentage returns.
+        Calculate daily percentage returns using PyNance when available.
 
         Args:
             data (pd.DataFrame): Stock data with price information
@@ -24,7 +289,22 @@ class FinancialAnalyzer:
         Returns:
             pd.Series: Daily percentage returns
         """
-        return data[column].pct_change()
+        if PYNANCE_AVAILABLE:
+            try:
+                temp_df = pd.DataFrame({column: data[column]})
+                returns_df = pn.tech.ret(temp_df, selection=column)
+                result = pd.Series(
+                    index=data.index, dtype=float, name=f"{column}_returns"
+                )
+                result.iloc[0] = np.nan
+                result.iloc[1:] = returns_df["Return"].values
+                return result
+            except (KeyError, AttributeError, ValueError):
+                # Fallback if PyNance doesn't work with our data structure
+                return data[column].pct_change()
+        else:
+            # Fallback to pandas pct_change
+            return data[column].pct_change()
 
     def calculate_volatility(
         self,
@@ -34,7 +314,7 @@ class FinancialAnalyzer:
         annualized: bool = True,
     ) -> pd.Series:
         """
-        Calculate rolling volatility.
+        Calculate rolling volatility using PyNance when available.
 
         Args:
             data (pd.DataFrame): Stock data
@@ -45,6 +325,29 @@ class FinancialAnalyzer:
         Returns:
             pd.Series: Rolling volatility
         """
+        if PYNANCE_AVAILABLE:
+            try:
+                # PyNance volatility function expects DataFrame
+                temp_df = pd.DataFrame({column: data[column]})
+                vol_df = pn.tech.volatility(temp_df, window=window, selection=column)
+                # Extract volatility values and create Series
+                vol = pd.Series(
+                    (
+                        vol_df["Volatility"].values
+                        if "Volatility" in vol_df.columns
+                        else vol_df.iloc[:, 0].values
+                    ),
+                    index=data.index,
+                    name=f"{column}_volatility",
+                )
+                if annualized:
+                    vol = vol * np.sqrt(252)  # Annualize if requested
+                return vol
+            except (KeyError, AttributeError, ValueError):
+                # Fallback to manual calculation if PyNance fails
+                pass
+
+        # Fallback to manual calculation
         returns = self.calculate_returns(data, column)
         volatility = returns.rolling(window=window).std()
 

@@ -39,7 +39,10 @@ class DataProcessor:
         df = news_df.copy()
 
         # Parse dates to datetime (already in UTC-4)
-        df[date_column] = pd.to_datetime(df[date_column])
+        # Handle cases where date might already be datetime
+        if not pd.api.types.is_datetime64_any_dtype(df[date_column]):
+            # Use format='mixed' to handle different date formats
+            df[date_column] = pd.to_datetime(df[date_column], format="mixed", utc=True)
 
         # Extract date (without time) for alignment
         df["trading_date"] = df[date_column].dt.date

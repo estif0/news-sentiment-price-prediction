@@ -8,9 +8,12 @@ This directory contains the main source code modules for the News Sentiment Pric
 
 Contains the main analysis classes implementing the project's core functionality:
 
--   **`data_loader.py`**: Data loading and validation
+-   **`data_loader.py`**: Data loading and validation for news and stock datasets
 -   **`eda.py`**: Exploratory Data Analysis with NLTK integration
--   **`visualizer.py`**: Plotting and visualization functions
+-   **`financial_analyzer.py`**: Technical indicators (TA-Lib) and financial metrics (PyNance)
+-   **`sentiment_analyzer.py`**: NLP sentiment scoring with TextBlob polarity analysis
+-   **`data_processor.py`**: Date alignment and news-stock dataset merging
+-   **`visualizer.py`**: Professional plotting and visualization functions
 
 ## Design Principles
 
@@ -28,6 +31,8 @@ Contains the main analysis classes implementing the project's core functionality
 -   **Testing**: Unit tests for all core functionality
 
 ## Usage Examples
+
+### Basic EDA Workflow
 
 ```python
 from src.core.data_loader import DataLoader
@@ -49,19 +54,59 @@ viz.plot_headline_length_distribution(headline_lengths)
 viz.plot_common_keywords(keywords)
 ```
 
+### Financial Analysis Workflow
+
+```python
+from src.core.data_loader import DataLoader
+from src.core.financial_analyzer import FinancialAnalyzer
+from src.core.visualizer import Visualizer
+
+# Load stock data
+loader = DataLoader()
+stock_df = loader.load_stock_data('data/cleaned/AAPL.csv')
+
+# Calculate technical indicators
+analyzer = FinancialAnalyzer()
+stock_with_indicators = analyzer.add_technical_indicators(stock_df)
+metrics = analyzer.calculate_performance_metrics(stock_df)
+
+# Visualize
+viz = Visualizer()
+viz.plot_technical_dashboard(stock_with_indicators, 'AAPL')
+```
+
+### Sentiment Correlation Workflow
+
+```python
+from src.core.data_loader import DataLoader
+from src.core.data_processor import DataProcessor
+from src.core.sentiment_analyzer import SentimentAnalyzer
+
+# Load datasets
+loader = DataLoader()
+news_df = loader.load_news_data('data/raw/raw_analyst_ratings.csv')
+stock_df = loader.load_stock_data('data/cleaned/NVDA.csv')
+
+# Process and merge
+processor = DataProcessor()
+merged_df = processor.process_and_merge(news_df, stock_df, 'NVDA')
+
+# Analyze sentiment
+sent_analyzer = SentimentAnalyzer()
+sentiment_returns = sent_analyzer.aggregate_daily_sentiment(merged_df)
+correlation = sentiment_returns['sentiment'].corr(sentiment_returns['daily_return'])
+print(f"Correlation: {correlation:.4f}")
+```
+
 ## Planned Expansions
 
-### Task 2: Quantitative Analysis
+### Future Enhancements
 
--   `financial_analyzer.py`: Technical indicators, stock metrics
--   `stock_data_loader.py`: Stock price data management
--   `indicator_calculator.py`: TA-Lib integration
-
-### Task 3: Correlation Analysis
-
--   `sentiment_analyzer.py`: NLP sentiment scoring
--   `correlation_engine.py`: Statistical correlation analysis
--   `data_processor.py`: Date alignment and data merging
+-   **Machine Learning Models**: LSTM/Transformer models for sentiment-based price prediction
+-   **Real-time Processing**: Live news feed integration for real-time sentiment monitoring
+-   **Advanced NLP**: Fine-tuned FinBERT for domain-specific financial sentiment
+-   **Portfolio Optimization**: Multi-stock portfolio construction using sentiment signals
+-   **Risk Management**: VaR and CVaR calculations incorporating sentiment factors
 
 ## Development Guidelines
 

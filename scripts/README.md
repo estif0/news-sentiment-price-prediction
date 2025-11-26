@@ -1,6 +1,6 @@
 # Scripts Directory
 
-This directory contains utility scripts for data processing, utilites and project maintenance tasks.
+This directory contains utility scripts for data processing, automation, and project maintenance tasks.
 
 ## Purpose
 
@@ -8,10 +8,31 @@ Scripts in this directory are designed for:
 
 -   **Data Processing**: ETL pipelines, data cleaning, and preprocessing
 -   **Utilities**: Helper functions, data validation, and maintenance scripts
+-   **Automation**: Batch processing and workflow automation
 
 ## Current Status
 
-🚧 **Under Development**: Scripts will be added as the project progresses through Tasks 2 and 3.
+✅ **Project Complete**: All analysis completed through Jupyter notebooks. Scripts directory available for future automation needs.
+
+## Potential Use Cases
+
+### Data Pipeline Automation
+
+-   Batch downloading of news data from APIs
+-   Automated stock data updates from financial data providers
+-   Scheduled sentiment analysis runs for new data
+
+### Deployment Scripts
+
+-   Model deployment automation
+-   Real-time sentiment monitoring setup
+-   Alert system for significant sentiment shifts
+
+### Maintenance Utilities
+
+-   Data quality validation scripts
+-   Database backup and restore utilities
+-   Performance benchmarking tools
 
 ## Usage
 

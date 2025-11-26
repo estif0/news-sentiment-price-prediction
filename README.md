@@ -172,8 +172,8 @@ news-sentiment-price-prediction/
 
 -   `main`: Stable, production-ready code
 -   `task-1`: EDA implementation (**Merged**)
--   `task-2`: Quantitative analysis (ongoing)
--   `task-3`: Correlation modeling (final phase)
+-   `task-2`: Quantitative analysis (**Merged**)
+-   `task-3`: Correlation modeling (**Merged**)
 
 ## 🏃‍♂️ Usage Examples
 

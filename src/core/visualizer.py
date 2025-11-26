@@ -393,3 +393,311 @@ class Visualizer:
         plt.title(title, fontsize=14, fontweight="bold", pad=20)
         plt.tight_layout()
         plt.show()
+
+    # ==================== Technical Indicator Visualizations ====================
+
+    def plot_stock_with_ma(
+        self,
+        data: pd.DataFrame,
+        symbol: str,
+        ma_columns: Optional[List[str]] = None,
+        price_column: str = "Close",
+    ) -> None:
+        """
+        Plot stock price with moving average overlays.
+
+        Args:
+            data (pd.DataFrame): Stock data with price and MA columns
+            symbol (str): Stock symbol for title
+            ma_columns (Optional[List[str]]): List of MA column names to plot
+            price_column (str): Price column to plot (default: 'Close')
+        """
+        if ma_columns is None:
+            # Default to common MA columns if they exist
+            ma_columns = [col for col in data.columns if "SMA" in col or "EMA" in col]
+
+        plt.figure(figsize=(14, 7))
+
+        # Plot price
+        plt.plot(
+            data.index,
+            data[price_column],
+            label=f"{symbol} {price_column}",
+            linewidth=2,
+            alpha=0.8,
+            color="navy",
+        )
+
+        # Plot moving averages
+        colors = ["red", "orange", "green", "purple", "brown"]
+        for i, ma_col in enumerate(ma_columns):
+            if ma_col in data.columns:
+                color = colors[i % len(colors)]
+                plt.plot(
+                    data.index,
+                    data[ma_col],
+                    label=ma_col,
+                    linewidth=1.5,
+                    alpha=0.7,
+                    linestyle="--",
+                    color=color,
+                )
+
+        plt.title(
+            f"{symbol} Price with Moving Averages", fontsize=14, fontweight="bold"
+        )
+        plt.xlabel("Date")
+        plt.ylabel("Price ($)")
+        plt.legend(loc="best")
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.show()
+
+    def plot_rsi_indicator(
+        self, data: pd.DataFrame, symbol: str, rsi_column: str = "RSI_14"
+    ) -> None:
+        """
+        Plot RSI indicator with overbought/oversold zones.
+
+        Args:
+            data (pd.DataFrame): Stock data with RSI column
+            symbol (str): Stock symbol for title
+            rsi_column (str): RSI column name (default: 'RSI_14')
+        """
+        plt.figure(figsize=(14, 5))
+
+        # Plot RSI
+        plt.plot(data.index, data[rsi_column], label="RSI", linewidth=2, color="purple")
+
+        # Overbought/Oversold lines
+        plt.axhline(y=70, color="red", linestyle="--", linewidth=1, label="Overbought")
+        plt.axhline(y=30, color="green", linestyle="--", linewidth=1, label="Oversold")
+        plt.axhline(y=50, color="gray", linestyle=":", linewidth=1, alpha=0.5)
+
+        # Fill zones
+        plt.fill_between(data.index, 70, 100, alpha=0.1, color="red")
+        plt.fill_between(data.index, 0, 30, alpha=0.1, color="green")
+
+        plt.title(f"{symbol} RSI Indicator", fontsize=14, fontweight="bold")
+        plt.xlabel("Date")
+        plt.ylabel("RSI")
+        plt.ylim(0, 100)
+        plt.legend(loc="best")
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.show()
+
+    def plot_macd_indicator(
+        self,
+        data: pd.DataFrame,
+        symbol: str,
+        macd_col: str = "MACD",
+        signal_col: str = "MACD_Signal",
+        hist_col: str = "MACD_Histogram",
+    ) -> None:
+        """
+        Plot MACD indicator with signal line and histogram.
+
+        Args:
+            data (pd.DataFrame): Stock data with MACD columns
+            symbol (str): Stock symbol for title
+            macd_col (str): MACD column name (default: 'MACD')
+            signal_col (str): Signal line column name (default: 'MACD_Signal')
+            hist_col (str): Histogram column name (default: 'MACD_Histogram')
+        """
+        plt.figure(figsize=(14, 6))
+
+        # Plot MACD and Signal lines
+        plt.plot(data.index, data[macd_col], label="MACD", linewidth=2, color="blue")
+        plt.plot(
+            data.index,
+            data[signal_col],
+            label="Signal",
+            linewidth=2,
+            color="red",
+            linestyle="--",
+        )
+
+        # Plot histogram
+        colors = ["green" if val >= 0 else "red" for val in data[hist_col]]
+        plt.bar(data.index, data[hist_col], label="Histogram", alpha=0.3, color=colors)
+
+        plt.axhline(y=0, color="black", linestyle="-", linewidth=0.5)
+
+        plt.title(f"{symbol} MACD Indicator", fontsize=14, fontweight="bold")
+        plt.xlabel("Date")
+        plt.ylabel("MACD")
+        plt.legend(loc="best")
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.show()
+
+    def plot_technical_analysis_dashboard(
+        self, data: pd.DataFrame, symbol: str, price_column: str = "Close"
+    ) -> None:
+        """
+        Create comprehensive 3-panel technical analysis dashboard.
+
+        Args:
+            data (pd.DataFrame): Stock data with technical indicators
+            symbol (str): Stock symbol for title
+            price_column (str): Price column to plot (default: 'Close')
+        """
+        fig, axes = plt.subplots(3, 1, figsize=(15, 12))
+        fig.suptitle(
+            f"{symbol} Technical Analysis Dashboard",
+            fontsize=16,
+            fontweight="bold",
+            y=0.995,
+        )
+
+        # Panel 1: Price with Moving Averages
+        axes[0].plot(
+            data.index,
+            data[price_column],
+            label=f"{symbol} Price",
+            linewidth=2,
+            color="navy",
+        )
+
+        # Plot MAs if available
+        ma_cols = [col for col in data.columns if "SMA" in col or "EMA" in col]
+        colors = ["red", "orange", "green", "purple", "brown"]
+        for i, ma_col in enumerate(ma_cols[:5]):  # Limit to 5 MAs
+            if ma_col in data.columns:
+                axes[0].plot(
+                    data.index,
+                    data[ma_col],
+                    label=ma_col,
+                    linewidth=1.5,
+                    alpha=0.7,
+                    linestyle="--",
+                    color=colors[i % len(colors)],
+                )
+
+        axes[0].set_title("Price & Moving Averages", fontweight="bold")
+        axes[0].set_ylabel("Price ($)")
+        axes[0].legend(loc="best", fontsize=9)
+        axes[0].grid(True, alpha=0.3)
+
+        # Panel 2: RSI
+        rsi_col = "RSI_14" if "RSI_14" in data.columns else None
+        if rsi_col:
+            axes[1].plot(
+                data.index, data[rsi_col], linewidth=2, color="purple", label="RSI"
+            )
+            axes[1].axhline(y=70, color="red", linestyle="--", linewidth=1, alpha=0.7)
+            axes[1].axhline(y=30, color="green", linestyle="--", linewidth=1, alpha=0.7)
+            axes[1].axhline(y=50, color="gray", linestyle=":", linewidth=1, alpha=0.5)
+            axes[1].fill_between(data.index, 70, 100, alpha=0.1, color="red")
+            axes[1].fill_between(data.index, 0, 30, alpha=0.1, color="green")
+            axes[1].set_ylim(0, 100)
+            axes[1].set_title("RSI Indicator", fontweight="bold")
+            axes[1].set_ylabel("RSI")
+            axes[1].legend(loc="best")
+            axes[1].grid(True, alpha=0.3)
+
+        # Panel 3: MACD
+        macd_col = "MACD" if "MACD" in data.columns else None
+        signal_col = "MACD_Signal" if "MACD_Signal" in data.columns else None
+        hist_col = "MACD_Histogram" if "MACD_Histogram" in data.columns else None
+
+        if macd_col and signal_col and hist_col:
+            axes[2].plot(
+                data.index, data[macd_col], linewidth=2, color="blue", label="MACD"
+            )
+            axes[2].plot(
+                data.index,
+                data[signal_col],
+                linewidth=2,
+                color="red",
+                linestyle="--",
+                label="Signal",
+            )
+
+            colors = ["green" if val >= 0 else "red" for val in data[hist_col]]
+            axes[2].bar(data.index, data[hist_col], alpha=0.3, color=colors)
+
+            axes[2].axhline(y=0, color="black", linestyle="-", linewidth=0.5)
+            axes[2].set_title("MACD Indicator", fontweight="bold")
+            axes[2].set_ylabel("MACD")
+            axes[2].set_xlabel("Date")
+            axes[2].legend(loc="best")
+            axes[2].grid(True, alpha=0.3)
+
+        plt.tight_layout()
+        plt.show()
+
+    def plot_bollinger_bands(
+        self,
+        data: pd.DataFrame,
+        symbol: str,
+        price_column: str = "Close",
+        bb_upper: str = "BB_Upper",
+        bb_middle: str = "BB_Middle",
+        bb_lower: str = "BB_Lower",
+    ) -> None:
+        """
+        Plot Bollinger Bands with price.
+
+        Args:
+            data (pd.DataFrame): Stock data with Bollinger Band columns
+            symbol (str): Stock symbol for title
+            price_column (str): Price column (default: 'Close')
+            bb_upper (str): Upper band column (default: 'BB_Upper')
+            bb_middle (str): Middle band column (default: 'BB_Middle')
+            bb_lower (str): Lower band column (default: 'BB_Lower')
+        """
+        plt.figure(figsize=(14, 7))
+
+        # Plot price
+        plt.plot(
+            data.index,
+            data[price_column],
+            label=f"{symbol} Price",
+            linewidth=2,
+            color="navy",
+        )
+
+        # Plot Bollinger Bands
+        if all(col in data.columns for col in [bb_upper, bb_middle, bb_lower]):
+            plt.plot(
+                data.index,
+                data[bb_upper],
+                label="Upper Band",
+                linewidth=1.5,
+                color="red",
+                linestyle="--",
+                alpha=0.7,
+            )
+            plt.plot(
+                data.index,
+                data[bb_middle],
+                label="Middle Band (SMA)",
+                linewidth=1.5,
+                color="orange",
+                linestyle="--",
+                alpha=0.7,
+            )
+            plt.plot(
+                data.index,
+                data[bb_lower],
+                label="Lower Band",
+                linewidth=1.5,
+                color="green",
+                linestyle="--",
+                alpha=0.7,
+            )
+
+            # Fill between bands
+            plt.fill_between(
+                data.index, data[bb_upper], data[bb_lower], alpha=0.1, color="gray"
+            )
+
+        plt.title(f"{symbol} Bollinger Bands", fontsize=14, fontweight="bold")
+        plt.xlabel("Date")
+        plt.ylabel("Price ($)")
+        plt.legend(loc="best")
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.show()
